@@ -15,6 +15,10 @@ if _async_url.startswith("postgresql://"):
 elif _async_url.startswith("postgres://"):
     _async_url = _async_url.replace("postgres://", "postgresql+asyncpg://", 1)
 
+# asyncpg uses `ssl=true` not `sslmode=require` (psycopg2 syntax)
+_async_url = _async_url.replace("?sslmode=require", "?ssl=true")
+_async_url = _async_url.replace("&sslmode=require", "&ssl=true")
+
 engine = create_async_engine(
     _async_url,
     echo=False,
