@@ -1,3 +1,6 @@
+import ssl as _ssl
+from urllib.parse import urlparse, urlencode, parse_qs, urlunparse
+
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -6,18 +9,31 @@ from app.db.base import Base  # noqa: F401 – re-exported for convenience
 
 # SQLite needs check_same_thread=False; PostgreSQL doesn't use connect_args
 _is_sqlite = settings.DATABASE_URL.startswith("sqlite")
-_connect_args = {"check_same_thread": False} if _is_sqlite else {}
 
 # Ensure async driver prefix is present (Neon/Vercel gives plain postgresql://)
-_async_url = settings.DATABASE_URL
-if _async_url.startswith("postgresql://"):
-    _async_url = _async_url.replace("postgresql://", "postgresql+asyncpg://", 1)
-elif _async_url.startswith("postgres://"):
-    _async_url = _async_url.replace("postgres://", "postgresql+asyncpg://", 1)
+_raw_url = settings.DATABASE_URL
+if _raw_url.startswith("postgresql://"):
+    _raw_url = _raw_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+elif _raw_url.startswith("postgres://"):
+    _raw_url = _raw_url.replace("postgres://", "postgresql+asyncpg://", 1)
 
-# asyncpg uses `ssl=true` not `sslmode=require` (psycopg2 syntax)
-_async_url = _async_url.replace("?sslmode=require", "?ssl=true")
-_async_url = _async_url.replace("&sslmode=require", "&ssl=true")
+# asyncpg doesn't support sslmode in URL — strip it and pass ssl via connect_args
+_needs_ssl = "sslmode=require" in _raw_url or "ssl=true" in _raw_url
+_async_url = (
+    _raw_url
+    .replace("?sslmode=require", "")
+    .replace("&sslmode=require", "")
+    .replace("?ssl=true", "")
+    .replace("&ssl=true", "")
+)
+
+if _is_sqlite:
+    _connect_args = {"check_same_thread": False}
+elif _needs_ssl:
+    _ssl_ctx = _ssl.create_default_context()
+    _connect_args = {"ssl": _ssl_ctx}
+else:
+    _connect_args = {}
 
 engine = create_async_engine(
     _async_url,
