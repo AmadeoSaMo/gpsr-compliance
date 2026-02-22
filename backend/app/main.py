@@ -11,11 +11,19 @@ from app.db.database import engine, Base
 from app.models import models  # noqa: F401 — ensure all models are registered
 
 
+import os
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Create all DB tables on startup (no-op if they already exist)."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Disable connection loop on startup if running in Vercel Serverless 
+    # to avoid failing gracefully when PostgreSQL env URL isn't configured for builds.
+    if os.environ.get("VERCEL") != "1":
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+        except Exception as e:
+            print(f"Skipping DB create_all: {e}")
     yield
 
 
