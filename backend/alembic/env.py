@@ -1,16 +1,23 @@
 """Alembic migration environment configuration."""
 from logging.config import fileConfig
-from sqlalchemy import pool
-from sqlalchemy import engine_from_config
+from urllib.parse import unquote
+
+from sqlalchemy import pool, create_engine
 from alembic import context
 
-from app.db.database import Base
+# Import Base and models (metadata only — no async engine created here)
+from sqlalchemy.orm import declarative_base
 from app.models import models  # noqa: F401 – ensure models are registered
+from app.db.base import Base  # Import standalone Base (no async engine)
 from app.core.config import settings
 
 config = context.config
-# Strip async driver prefix so Alembic uses the sync driver
-_sync_url = settings.DATABASE_URL.replace("+asyncpg", "").replace("+aiosqlite", "")
+
+# Build a SYNC url for Alembic (psycopg2) from the async one
+import os
+_raw_url = os.environ.get("DATABASE_URL", settings.DATABASE_URL)
+_sync_url = _raw_url.replace("+asyncpg", "").replace("+aiosqlite", "")
+# Note: do NOT unquote — psycopg2 handles percent-encoded passwords correctly
 config.set_main_option("sqlalchemy.url", _sync_url)
 
 if config.config_file_name is not None:
@@ -27,11 +34,9 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    # Create a sync engine explicitly using psycopg2
+    sync_url = config.get_main_option("sqlalchemy.url")
+    connectable = create_engine(sync_url, poolclass=pool.NullPool)
     with connectable.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():

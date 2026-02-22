@@ -8,3 +8,6 @@ from app.main import app
 
 # Vercel Serverless Function entrypoint
 # The app object needs to be available here
+
+# Ensure app is properly exposed for vercel
+app = app

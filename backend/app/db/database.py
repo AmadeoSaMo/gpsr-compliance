@@ -1,7 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
+from app.db.base import Base  # noqa: F401 – re-exported for convenience
 
 # SQLite needs check_same_thread=False; PostgreSQL doesn't use connect_args
 _is_sqlite = settings.DATABASE_URL.startswith("sqlite")
@@ -20,7 +21,6 @@ AsyncSessionLocal = sessionmaker(
     expire_on_commit=False,
 )
 
-Base = declarative_base()
 
 
 async def get_db() -> AsyncSession:
