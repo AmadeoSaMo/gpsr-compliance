@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <style>
+        @page {
+            size: A4;
+            margin: 2.5cm 2cm 2.5cm 2cm;
+
+            @top-right {
+                content: "GPSR 2023/988 — Ref: {{ batch_code }}";
+                font-size: 8pt;
+                color: #888;
+            }
+
+            @bottom-center {
+                content: "Página " counter(page) " de " counter(pages);
+                font-size: 8pt;
+                color: #888;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: "Helvetica Neue", Arial, sans-serif;
+            font-size: 10pt;
+            color: #1a1a2e;
+            line-height: 1.6;
+        }
+
+        /* === COVER === */
+        .cover {
+            page-break-after: always;
+        }
+
+        .cover-header {
+            background: #0f3460;
+            color: white;
+            padding: 40px 36px;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .cover-header h1 {
+            font-size: 22pt;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .cover-header .subtitle {
+            font-size: 11pt;
+            opacity: 0.8;
+        }
+
+        .cover-header .regulation {
+            margin-top: 16px;
+            font-size: 9pt;
+            background: rgba(255, 255, 255, 0.15);
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 100px;
+        }
+
+        .cover-body {
+            border: 2px solid #0f3460;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            padding: 36px;
+        }
+
+        .cover-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 24px 0;
+        }
+
+        .cover-field {
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 12px 16px;
+        }
+
+        .cover-field label {
+            display: block;
+            font-size: 8pt;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .cover-field span {
+            font-size: 11pt;
+            font-weight: 600;
+            color: #0f3460;
+        }
+
+        .legal-notice {
+            margin-top: 28px;
+            background: #fff7ed;
+            border-left: 4px solid #f59e0b;
+            padding: 14px 16px;
+            border-radius: 0 6px 6px 0;
+            font-size: 9pt;
+            color: #78350f;
+        }
+
+        .legal-notice strong {
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .cover-footer {
+            margin-top: 32px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            font-size: 9pt;
+            color: #64748b;
+        }
+
+        /* === SECTIONS === */
+        h2.section-title {
+            font-size: 14pt;
+            font-weight: 700;
+            color: white;
+            background: #0f3460;
+            padding: 10px 18px;
+            border-radius: 6px;
+            margin: 28px 0 16px;
+            page-break-after: avoid;
+        }
+
+        h3.sub-title {
+            font-size: 11pt;
+            font-weight: 700;
+            color: #0f3460;
+            margin: 18px 0 10px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 5px;
+        }
+
+        p {
+            margin-bottom: 8px;
+        }
+
+        /* === TABLES === */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            font-size: 9.5pt;
+        }
+
+        th {
+            background: #0f3460;
+            color: white;
+            text-align: left;
+            padding: 9px 12px;
+            font-weight: 600;
+            font-size: 8.5pt;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        td {
+            padding: 9px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: top;
+        }
+
+        tr:nth-child(even) td {
+            background: #f8fafc;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* === RISK MATRIX === */
+        .risk-table td:first-child {
+            font-weight: 600;
+        }
+
+        .badge-high {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 2px 8px;
+            border-radius: 100px;
+            font-size: 8pt;
+            font-weight: 700;
+        }
+
+        .badge-med {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 2px 8px;
+            border-radius: 100px;
+            font-size: 8pt;
+            font-weight: 700;
+        }
+
+        .badge-low {
+            background: #dcfce7;
+            color: #166534;
+            padding: 2px 8px;
+            border-radius: 100px;
+            font-size: 8pt;
+            font-weight: 700;
+        }
+
+        /* === CHECKLIST === */
+        .check-list {
+            margin: 8px 0;
+        }
+
+        .check-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 6px;
+            font-size: 9.5pt;
+        }
+
+        .check-box {
+            width: 14px;
+            height: 14px;
+            border: 2px solid #0f3460;
+            border-radius: 3px;
+            flex-shrink: 0;
+            margin-top: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .check-box.done {
+            background: #0f3460;
+            color: white;
+            font-size: 8pt;
+        }
+
+        /* === SIGNATURE BOX === */
+        .signature-block {
+            margin-top: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        .signature-line {
+            border-top: 2px solid #1a1a2e;
+            padding-top: 8px;
+            font-size: 9pt;
+            color: #64748b;
+        }
+
+        .signature-line strong {
+            display: block;
+            color: #1a1a2e;
+            margin-bottom: 4px;
+        }
+
+        /* === PAGE BREAK === */
+        .page-break {
+            page-break-before: always;
+        }
+
+        .no-break {
+            page-break-inside: avoid;
+        }
+
+        /* === INFO BOX === */
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 6px;
+            padding: 14px 16px;
+            margin: 12px 0;
+            font-size: 9.5pt;
+        }
+
+        .warn-box {
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            border-radius: 6px;
+            padding: 14px 16px;
+            margin: 12px 0;
+            font-size: 9.5pt;
+        }
+
+        .warn-box strong,
+        .info-box strong {
+            display: block;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- =================== PORTADA =================== -->
+    <div class="cover">
+        <div class="cover-header">
+            <h1>Expediente Técnico</h1>
+            <div class="subtitle">Documentación de Seguridad del Producto</div>
+            <div class="regulation">Reglamento (UE) 2023/988 — GPSR</div>
+        </div>
+        <div class="cover-body">
+            <div class="cover-grid">
+                <div class="cover-field">
+                    <label>Nombre del Producto</label>
+                    <span>{{ product_name }}</span>
+                </div>
+                <div class="cover-field">
+                    <label>Categoría</label>
+                    <span>{{ category_label }}</span>
+                </div>
+                <div class="cover-field">
+                    <label>Número de Versión</label>
+                    <span>{{ version_number }}</span>
+                </div>
+                <div class="cover-field">
+                    <label>Código de Lote</label>
+                    <span style="font-family: monospace;">{{ batch_code }}</span>
+                </div>
+                <div class="cover-field">
+                    <label>Fabricante / Persona Responsable</label>
+                    <span>{{ manufacturer_name }}</span>
+                </div>
+                <div class="cover-field">
+                    <label>Fecha de Emisión</label>
+                    <span>{{ issued_date }}</span>
+                </div>
+            </div>
+
+            <div class="legal-notice">
+                <strong>⚠️ Documento de custodia legal obligatoria</strong>
+                De conformidad con el Art. 9.8 del Reglamento (UE) 2023/988 del Parlamento Europeo y del Consejo,
+                este Expediente Técnico debe conservarse durante <strong>10 años</strong> a partir de la fecha de
+                última comercialización del producto en el mercado de la Unión Europea.
+                Fecha límite de custodia: <strong>{{ retention_until }}</strong>.
+            </div>
+
+            <div class="cover-footer">
+                <div>
+                    <strong>Email de contacto</strong><br />{{ manufacturer_email }}
+                </div>
+                <div>
+                    <strong>Dirección postal</strong><br />{{ manufacturer_address }}
+                </div>
+                <div>
+                    <strong>Generado por</strong><br />GPSR Comply · gpsr-comply.eu
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================== ÍNDICE =================== -->
+    <h2 class="section-title">Índice del Expediente</h2>
+    <table>
+        <tr>
+            <td style="width:60px; font-weight:700;">1.</td>
+            <td>Descripción General del Producto</td>
+        </tr>
+        <tr>
+            <td>2.</td>
+            <td>Lista de Materiales (BOM) y Trazabilidad de Proveedores</td>
+        </tr>
+        <tr>
+            <td>3.</td>
+            <td>Evaluación de Riesgos y Medidas de Mitigación</td>
+        </tr>
+        <tr>
+            <td>4.</td>
+            <td>Checks de Cumplimiento por Categoría</td>
+        </tr>
+        <tr>
+            <td>5.</td>
+            <td>Instrucciones de Uso y Advertencias de Seguridad</td>
+        </tr>
+        <tr>
+            <td>6.</td>
+            <td>Información de Etiquetado y Trazabilidad</td>
+        </tr>
+        <tr>
+            <td>7.</td>
+            <td>Declaración del Fabricante / Persona Responsable</td>
+        </tr>
+    </table>
+
+    <!-- =================== SECCIÓN 1 =================== -->
+    <div class="page-break"></div>
+    <h2 class="section-title">1. Descripción General del Producto</h2>
+
+    <h3 class="sub-title">1.1 Ficha de Identificación</h3>
+    <table>
+        <tr>
+            <td style="width:200px; font-weight:600;">Nombre comercial</td>
+            <td>{{ product_name }}</td>
+        </tr>
+        <tr>
+            <td>Categoría GPSR</td>
+            <td>{{ category_label }}</td>
+        </tr>
+        <tr>
+            <td>Versión</td>
+            <td>{{ version_number }}</td>
+        </tr>
+        <tr>
+            <td>Número de Lote / Serie</td>
+            <td style="font-family:monospace;">{{ batch_code }}</td>
+        </tr>
+        <tr>
+            <td>Destinatarios / Consumidores objetivo</td>
+            <td>{{ target_consumers }}</td>
+        </tr>
+    </table>
+
+    <h3 class="sub-title">1.2 Descripción del Producto</h3>
+    <p>{{ description }}</p>
+
+    <h3 class="sub-title">1.3 Uso Previsto y Uso No Previsto Previsible</h3>
+    <table>
+        <tr>
+            <th>Uso previsto</th>
+            <th>Uso no previsto previsible</th>
+        </tr>
+        <tr>
+            <td>{{ intended_use }}</td>
+            <td>{{ foreseeable_misuse or "No aplica / No identificado." }}</td>
+        </tr>
+    </table>
+
+    <!-- =================== SECCIÓN 2 =================== -->
+    <div class="page-break"></div>
+    <h2 class="section-title">2. Lista de Materiales (BOM) y Trazabilidad</h2>
+
+    <div class="info-box">
+        <strong>Base legal</strong>
+        El Art. 9.4.b del GPSR exige que el Expediente Técnico incluya la descripción de los materiales empleados
+        y la información de los proveedores para garantizar la trazabilidad de la cadena de suministro.
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Material</th>
+                <th>Proveedor</th>
+                <th>País de origen</th>
+                <th>Certificado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in bom %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td style="font-weight:600;">{{ item.material_name }}</td>
+                <td>{{ item.supplier or "—" }}</td>
+                <td>{{ item.origin_country or "—" }}</td>
+                <td>{{ item.certificate or "Pendiente" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- =================== SECCIÓN 3 =================== -->
+    <div class="page-break"></div>
+    <h2 class="section-title">3. Evaluación de Riesgos</h2>
+
+    <div class="info-box">
+        <strong>Base legal</strong>
+        El Art. 9.4.c del GPSR y las guías de la Comisión Europea exigen un análisis de riesgos documentado para cada
+        producto,
+        evaluando los peligros identificados y las medidas adoptadas, independientemente del nivel de riesgo resultante.
+    </div>
+
+    <h3 class="sub-title">3.1 Metodología: Matriz de Riesgo 5×5</h3>
+    <p>Se utiliza una matriz de riesgo estándar con escala 1-5 para probabilidad (P) y gravedad (G).
+        Puntuación = P × G. <strong>Bajo (≤4) · Medio (5-12) · Alto (≥13).</strong></p>
+
+    <table class="risk-table">
+        <thead>
+            <tr>
+                <th>Peligro identificado</th>
+                <th>Tipo</th>
+                <th>P (1-5)</th>
+                <th>G (1-5)</th>
+                <th>Score</th>
+                <th>Nivel</th>
+                <th>Medida de mitigación</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for risk in risks %}
+            <tr>
+                <td>{{ risk.hazard_description }}</td>
+                <td style="text-transform:capitalize;">{{ risk.hazard_type.replace('_',' ') }}</td>
+                <td style="text-align:center;">{{ risk.probability }}</td>
+                <td style="text-align:center;">{{ risk.severity }}</td>
+                <td style="text-align:center; font-weight:700;">{{ risk.risk_score|int }}</td>
+                <td>
+                    {% if risk.risk_level == 'high' %}<span class="badge-high">ALTO</span>
+                    {% elif risk.risk_level == 'medium' %}<span class="badge-med">MEDIO</span>
+                    {% else %}<span class="badge-low">BAJO</span>{% endif %}
+                </td>
+                <td>{{ risk.mitigation or "Incorporar advertencia en etiqueta." }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- =================== SECCIÓN 4 =================== -->
+    <div class="page-break"></div>
+    <h2 class="section-title">4. Checks de Cumplimiento por Categoría</h2>
+    <p>Requisitos específicos aplicables a la categoría <strong>{{ category_label }}</strong>:</p>
+
+    <div class="check-list">
+        {% for check in mandatory_checks %}
+        <div class="check-item no-break">
+            <div class="check-box">✓</div>
+            <span>{{ check }}</span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- =================== SECCIÓN 5 =================== -->
+    <h2 class="section-title">5. Instrucciones de Uso y Advertencias</h2>
+    {% if warnings %}
+    <div class="warn-box">
+        <strong>⚠️ Advertencias de seguridad obligatorias en la etiqueta y/o acompañando al producto:</strong>
+        <ul style="margin-top:8px; padding-left:20px;">
+            {% for w in warnings %}
+            <li style="margin-bottom:4px;">{{ w }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% else %}
+    <p>No se han identificado advertencias específicas adicionales. Incluir instrucciones básicas de uso y
+        mantenimiento.</p>
+    {% endif %}
+
+    <!-- =================== SECCIÓN 6 =================== -->
+    <h2 class="section-title">6. Etiquetado y Trazabilidad</h2>
+    <table>
+        <tr>
+            <td style="width:220px; font-weight:600;">Nombre del fabricante</td>
+            <td>{{ manufacturer_name }}</td>
+        </tr>
+        <tr>
+            <td>Dirección postal</td>
+            <td>{{ manufacturer_address }}</td>
+        </tr>
+        <tr>
+            <td>Email de contacto (obligatorio)</td>
+            <td>{{ manufacturer_email }}</td>
+        </tr>
+        <tr>
+            <td>Número de lote / código de trazabilidad</td>
+            <td style="font-family:monospace;">{{ batch_code }}</td>
+        </tr>
+        <tr>
+            <td>Idiomas de etiquetado</td>
+            <td>{{ languages or "Español (ES)" }}</td>
+        </tr>
+    </table>
+
+    <div class="info-box">
+        <strong>Nota sobre el Código QR</strong>
+        Según la FAQ de la Comisión Europea sobre el GPSR, el código QR puede utilizarse como <em>complemento</em>
+        para facilitar el acceso a información adicional, pero <strong>no es sustituto</strong> de la información
+        legible físicamente en la etiqueta o el envase.
+    </div>
+
+    <!-- =================== SECCIÓN 7 — FIRMA =================== -->
+    <div class="page-break"></div>
+    <h2 class="section-title">7. Declaración del Fabricante / Persona Responsable</h2>
+
+    <p>
+        El abajo firmante declara, bajo su exclusiva responsabilidad, que la información contenida en el presente
+        Expediente Técnico es completa, veraz y se corresponde con el producto identificado en este documento.
+        Se compromete a mantener actualizada esta documentación y a ponerla a disposición de las autoridades de
+        vigilancia del mercado cuando sea requerida, durante el período de custodia legal de diez (10) años.
+    </p>
+
+    <p style="margin-top:16px;">
+        De conformidad con el Reglamento (UE) 2023/988 del Parlamento Europeo y del Consejo, de 10 de mayo de 2023,
+        relativo a la seguridad general de los productos.
+    </p>
+
+    <div class="signature-block">
+        <div>
+            <div style="height: 50px;"></div>
+            <div class="signature-line">
+                <strong>Firma del Fabricante / Persona Responsable</strong>
+                {{ manufacturer_name }}<br />
+                {{ issued_date }}
+            </div>
+        </div>
+        <div>
+            <div style="height: 50px;"></div>
+            <div class="signature-line">
+                <strong>Sello (si aplica)</strong>
+                &nbsp;
+            </div>
+        </div>
+    </div>
+
+    <div
+        style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 16px; font-size: 8pt; color: #94a3b8; text-align: center;">
+        Este Expediente Técnico ha sido generado por <strong>GPSR Comply</strong> conforme al Reglamento (UE) 2023/988.
+        Ref: {{ batch_code }} · v{{ version_number }} · {{ issued_date }}
+    </div>
+
+</body>
+
+</html>
