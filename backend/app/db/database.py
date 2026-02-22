@@ -8,8 +8,15 @@ from app.db.base import Base  # noqa: F401 – re-exported for convenience
 _is_sqlite = settings.DATABASE_URL.startswith("sqlite")
 _connect_args = {"check_same_thread": False} if _is_sqlite else {}
 
+# Ensure async driver prefix is present (Neon/Vercel gives plain postgresql://)
+_async_url = settings.DATABASE_URL
+if _async_url.startswith("postgresql://"):
+    _async_url = _async_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+elif _async_url.startswith("postgres://"):
+    _async_url = _async_url.replace("postgres://", "postgresql+asyncpg://", 1)
+
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    _async_url,
     echo=False,
     future=True,
     connect_args=_connect_args,
