@@ -49,6 +49,7 @@ MITIGATION_SUGGESTIONS: dict[str, str] = {
     "chemical_epoxy":       "Asegurar tiempo de curado completo según las instrucciones del fabricante de la resina. Realizar test organoléptico por lote.",
     "chemical_lead":        "Usar exclusivamente esmaltes sin plomo certificados para uso alimentario. Test de migración según EN 1388.",
     "chemical_resin":       "Garantizar curado completo de la resina antes del embalaje. Incluir Test de dureza Shore como control de calidad por lote.",
+    "chemical_chromium":    "Solicitar certificado de ausencia de cromo VI (≤3 mg/kg). Conservar en el expediente técnico.",
     # Thermal
     "thermal_fire":         "Incluir en la etiqueta instrucción de seguridad contra el fuego. Empaquetar con instrucciones de uso. Mantener alejado de materiales inflamables.",
     "thermal_candle":       "Etiquetar con las advertencias obligatorias para velas (EN 15493). Indicar distancia mínima 10 cm a objetos inflamables y tiempo máximo de quemado.",
@@ -71,12 +72,14 @@ _MITIGATION_CLASSIFIER: list[tuple[str, str, str]] = [
     ("chemical", "pesticida", "chemical_pesticide"),
     ("chemical", "cov",       "chemical_voc"),
     ("chemical", "barniz",    "chemical_voc"),
+    ("chemical", "formald",   "chemical_voc"),
     ("chemical", "níquel",    "chemical_nickel"),
     ("chemical", "resina",    "chemical_epoxy"),
     ("chemical", "epoxi",     "chemical_epoxy"),
     ("chemical", "plomo",     "chemical_lead"),
     ("chemical", "cadmio",    "chemical_lead"),
     ("chemical", "esmalte",   "chemical_lead"),
+    ("chemical", "cromo",     "chemical_chromium"),
     ("thermal",  "vela",      "thermal_candle"),
     ("thermal",  "cera",      "thermal_candle"),
     ("thermal",  "incendi",   "thermal_candle"),
@@ -138,7 +141,8 @@ def _get_mitigation_suggestion(hazard_type: str, hazard_description: str) -> str
 # ---------------------------------------------------------------------------
 
 MATERIAL_RISK_MAP: dict[str, list[dict]] = {
-    # TEXTILES
+
+    # ===== TEXTILES =====
     "lana": [
         {"hazard_type": "chemical", "hazard_description": "Posibles alérgenos en tintes o aprestos de la lana.", "probability": 2, "severity": 2},
         {"hazard_type": "thermal", "hazard_description": "La lana es inflamable si está en contacto con llamas directas.", "probability": 2, "severity": 3},
@@ -151,14 +155,124 @@ MATERIAL_RISK_MAP: dict[str, list[dict]] = {
         {"hazard_type": "thermal", "hazard_description": "El poliéster funde y puede causar quemaduras graves en contacto con llamas.", "probability": 2, "severity": 4},
         {"hazard_type": "chemical", "hazard_description": "Posibles sustancias químicas REACH en acabados sintéticos.", "probability": 1, "severity": 3},
     ],
+    "seda": [
+        {"hazard_type": "chemical", "hazard_description": "Posibles alérgenos en tintes o aprestos de la seda.", "probability": 2, "severity": 2},
+        {"hazard_type": "thermal", "hazard_description": "La seda es inflamable y puede arder rápidamente.", "probability": 2, "severity": 3},
+    ],
+    "lino": [
+        {"hazard_type": "chemical", "hazard_description": "Posibles alérgenos en tintes o tratamientos de acabado del lino.", "probability": 2, "severity": 2},
+        {"hazard_type": "thermal", "hazard_description": "El lino es inflamable. Mantener alejado de llamas.", "probability": 2, "severity": 3},
+    ],
+    "acrílico": [
+        {"hazard_type": "thermal", "hazard_description": "Las fibras acrílicas funden en contacto con calor/llamas y pueden causar quemaduras.", "probability": 2, "severity": 4},
+        {"hazard_type": "chemical", "hazard_description": "Posibles residuos de acrilonitrilo. Verificar conformidad REACH.", "probability": 1, "severity": 3},
+    ],
+    "acrilico": [
+        {"hazard_type": "thermal", "hazard_description": "Las fibras acrílicas funden en contacto con calor/llamas y pueden causar quemaduras.", "probability": 2, "severity": 4},
+        {"hazard_type": "chemical", "hazard_description": "Posibles residuos de acrilonitrilo. Verificar conformidad REACH.", "probability": 1, "severity": 3},
+    ],
+    "viscosa": [
+        {"hazard_type": "chemical", "hazard_description": "Posibles trazas de disulfuro de carbono del proceso de fabricación. Solicitar FDS al proveedor.", "probability": 1, "severity": 2},
+        {"hazard_type": "thermal", "hazard_description": "La viscosa es inflamable, similar al algodón.", "probability": 2, "severity": 3},
+    ],
+    "rayón": [
+        {"hazard_type": "chemical", "hazard_description": "Posibles trazas de disulfuro de carbono del proceso de fabricación.", "probability": 1, "severity": 2},
+        {"hazard_type": "thermal", "hazard_description": "El rayón es inflamable, similar al algodón.", "probability": 2, "severity": 3},
+    ],
+    "elastano": [
+        {"hazard_type": "chemical", "hazard_description": "Posibles residuos de isocianatos o colorantes reactivos. Verificar conformidad REACH.", "probability": 1, "severity": 3},
+    ],
+    "spandex": [
+        {"hazard_type": "chemical", "hazard_description": "Posibles residuos de isocianatos o colorantes reactivos. Verificar conformidad REACH.", "probability": 1, "severity": 3},
+    ],
+    "lycra": [
+        {"hazard_type": "chemical", "hazard_description": "Posibles residuos de isocianatos. Verificar conformidad REACH.", "probability": 1, "severity": 3},
+    ],
+    "bambú": [
+        {"hazard_type": "chemical", "hazard_description": "Si es fibra de bambú textil (viscosa de bambú), pueden quedar trazas del proceso químico.", "probability": 1, "severity": 2},
+    ],
+    "poliamida": [
+        {"hazard_type": "chemical", "hazard_description": "Posibles sustancias REACH en acabados. Solicitar declaración de conformidad.", "probability": 1, "severity": 2},
+    ],
+    "nylon": [
+        {"hazard_type": "chemical", "hazard_description": "Posibles sustancias REACH en acabados de nylon.", "probability": 1, "severity": 2},
+        {"hazard_type": "thermal", "hazard_description": "El nylon funde a altas temperaturas, riesgo de quemaduras.", "probability": 1, "severity": 3},
+    ],
+    "fleece": [
+        {"hazard_type": "chemical", "hazard_description": "Material sintético (poliéster). Posibles sustancias REACH en acabados.", "probability": 1, "severity": 2},
+        {"hazard_type": "thermal", "hazard_description": "Inflamable. Puede fundir en contacto con fuentes de calor.", "probability": 2, "severity": 3},
+    ],
+    "fieltro": [
+        {"hazard_type": "chemical", "hazard_description": "Posibles alérgenos en colorantes o tintes del fieltro.", "probability": 2, "severity": 2},
+    ],
+    "terciopelo": [
+        {"hazard_type": "chemical", "hazard_description": "Posibles alérgenos en tintes o aprestos del terciopelo.", "probability": 2, "severity": 2},
+        {"hazard_type": "thermal", "hazard_description": "El terciopelo puede arder en contacto con fuentes de calor.", "probability": 2, "severity": 3},
+    ],
+    "cuero": [
+        {"hazard_type": "chemical", "hazard_description": "Los curtientes de cromo pueden ser alergénicos (cromo VI). Solicitar certificado libre de cromo VI.", "probability": 3, "severity": 3},
+        {"hazard_type": "thermal", "hazard_description": "El cuero es inflamable y puede liberar humos tóxicos al arder.", "probability": 2, "severity": 3},
+    ],
+    "piel": [
+        {"hazard_type": "chemical", "hazard_description": "Los curtientes de cromo pueden ser alergénicos (cromo VI). Solicitar certificado.", "probability": 3, "severity": 3},
+    ],
+    "ante": [
+        {"hazard_type": "chemical", "hazard_description": "Los curtientes y tintes del ante pueden contener cromo o alérgenos. Solicitar certificado.", "probability": 2, "severity": 3},
+    ],
+    "encaje": [
+        {"hazard_type": "chemical", "hazard_description": "Posibles alérgenos en tintes o blanqueadores del encaje.", "probability": 2, "severity": 2},
+    ],
+    "hilo": [
+        {"hazard_type": "chemical", "hazard_description": "Posibles alérgenos en tintes del hilo de coser o bordar.", "probability": 1, "severity": 2},
+    ],
+    "cordón": [
+        {"hazard_type": "physical", "hazard_description": "Los cordones en capuchas para niños suponen riesgo de estrangulamiento (ISO 13688).", "probability": 3, "severity": 5},
+    ],
+    "cremallera": [
+        {"hazard_type": "chemical", "hazard_description": "Las cremalleras de metal pueden contener níquel. Verificar límites EN 1811.", "probability": 2, "severity": 3},
+        {"hazard_type": "physical", "hazard_description": "Bordes y dientes de cremallera pueden causar pequeños cortes.", "probability": 2, "severity": 2},
+    ],
+    "velcro": [
+        {"hazard_type": "physical", "hazard_description": "La cara abrojo del velcro puede generar pequeños araños en la piel.", "probability": 2, "severity": 1},
+    ],
+    "elástico": [
+        {"hazard_type": "chemical", "hazard_description": "Posibles alérgenos al látex en elásticos de goma natural. Indicar si contiene látex.", "probability": 2, "severity": 3},
+    ],
 
-    # MADERA
+    # ===== MADERA =====
     "madera": [
         {"hazard_type": "mechanical", "hazard_description": "Riesgo de astillas o aristas cortantes si no está correctamente lijada.", "probability": 3, "severity": 2},
         {"hazard_type": "chemical", "hazard_description": "Los barnices y pinturas pueden contener COVs o metales pesados.", "probability": 2, "severity": 3},
     ],
+    "pino": [
+        {"hazard_type": "mechanical", "hazard_description": "La madera de pino puede generar astillas si no está correctamente lijada.", "probability": 3, "severity": 2},
+        {"hazard_type": "chemical", "hazard_description": "Resinas naturales del pino pueden ser irritantes. Los barnices pueden contener COVs.", "probability": 2, "severity": 2},
+    ],
+    "roble": [
+        {"hazard_type": "mechanical", "hazard_description": "Bordes y aristas afilados si no están correctamente acabados.", "probability": 2, "severity": 2},
+        {"hazard_type": "chemical", "hazard_description": "El polvo de roble es alergénico y potencialmente cancerígeno (madera dura). Riesgo solo en fabricación.", "probability": 1, "severity": 3},
+    ],
+    "mdf": [
+        {"hazard_type": "chemical", "hazard_description": "El MDF puede emitir formaldehído (COV) del adhesivo urea-formaldehyde. Verificar clase E1.", "probability": 3, "severity": 3},
+        {"hazard_type": "mechanical", "hazard_description": "Bordes del MDF pueden ser afilados si no están acabados.", "probability": 2, "severity": 2},
+    ],
+    "contrachapado": [
+        {"hazard_type": "chemical", "hazard_description": "Puede emitir formaldehído del adhesivo. Exigir certificación E1.", "probability": 2, "severity": 3},
+    ],
+    "barniz": [
+        {"hazard_type": "chemical", "hazard_description": "Los barnices contienen COVs. Asegurar ventilación y curado completo antes de entregar el producto.", "probability": 3, "severity": 2},
+    ],
+    "lacado": [
+        {"hazard_type": "chemical", "hazard_description": "Las lacas pueden contener COVs, metales pesados o isocianatos. Solicitar FDS.", "probability": 2, "severity": 3},
+    ],
+    "pintura": [
+        {"hazard_type": "chemical", "hazard_description": "Algunas pinturas pueden contener plomo, cadmio u otros metales pesados. Verificar conformidad REACH.", "probability": 2, "severity": 4},
+    ],
+    "corcho": [
+        {"hazard_type": "chemical", "hazard_description": "Posibles trazas de TCA o pesticidas en corcho no certificado. Pedir certificado FSC.", "probability": 1, "severity": 2},
+    ],
 
-    # VELAS / CERA
+    # ===== VELAS / AROMATERAPIA =====
     "cera": [
         {"hazard_type": "thermal", "hazard_description": "Riesgo de incendio si la vela se deja desatendida o cerca de materiales inflamables.", "probability": 4, "severity": 5},
         {"hazard_type": "chemical", "hazard_description": "La cera de parafina puede emitir COVs al quemarse.", "probability": 3, "severity": 2},
@@ -166,36 +280,171 @@ MATERIAL_RISK_MAP: dict[str, list[dict]] = {
     "parafina": [
         {"hazard_type": "thermal", "hazard_description": "Alta inflamabilidad. Riesgo de ignición espontánea a altas temperaturas.", "probability": 3, "severity": 5},
     ],
+    "soja": [
+        {"hazard_type": "thermal", "hazard_description": "La cera de soja es inflamable. Riesgo de incendio si la vela se deja desatendida.", "probability": 4, "severity": 5},
+        {"hazard_type": "chemical", "hazard_description": "Los aceites esenciales añadidos pueden ser alérgenos. Indicar composición en etiqueta.", "probability": 2, "severity": 2},
+    ],
+    "aceite esencial": [
+        {"hazard_type": "chemical", "hazard_description": "Los aceites esenciales pueden causar reacciones alérgicas o irritación. Incluir alérgenos IFRA en etiqueta.", "probability": 3, "severity": 3},
+        {"hazard_type": "thermal", "hazard_description": "Los aceites esenciales son inflamables. Mantener alejados de llamas.", "probability": 3, "severity": 4},
+    ],
+    "fragancia": [
+        {"hazard_type": "chemical", "hazard_description": "Las fragancias pueden contener alérgenos regulados por la UE. Declarar los 26 alérgenos obligatorios en etiqueta.", "probability": 3, "severity": 3},
+    ],
+    "mecha": [
+        {"hazard_type": "chemical", "hazard_description": "Las mechas con núcleo metálico pueden emitir metales al quemarse. Usar solo mechas de algodón certificadas.", "probability": 2, "severity": 3},
+        {"hazard_type": "thermal", "hazard_description": "La mecha es el elemento de ignición. Mantener recortada a 5mm para evitar llama excesiva.", "probability": 3, "severity": 4},
+    ],
 
-    # METALES
+    # ===== METALES / JOYERÍA =====
     "plata": [
         {"hazard_type": "chemical", "hazard_description": "Posible contaminación con níquel u otros metales en aleaciones. Alérgeno confirmado por REACH.", "probability": 2, "severity": 3},
     ],
     "cobre": [
         {"hazard_type": "chemical", "hazard_description": "Oxidación del cobre puede generar verdín (carbonato de cobre), irritante cutáneo.", "probability": 2, "severity": 2},
     ],
+    "oro": [
+        {"hazard_type": "chemical", "hazard_description": "El oro de baja pureza puede contener níquel u otros metales alérgenos. Verificar quilates y certificar aleación.", "probability": 2, "severity": 3},
+    ],
+    "bronce": [
+        {"hazard_type": "chemical", "hazard_description": "El bronce contiene cobre y estaño. Posible verdinización (carbonato de cobre), irritante cutáneo.", "probability": 2, "severity": 2},
+    ],
+    "latón": [
+        {"hazard_type": "chemical", "hazard_description": "El latón contiene zinc y cobre. Puede liberar zinc en contacto prolongado con piel. Verificar REACH.", "probability": 2, "severity": 2},
+    ],
+    "aluminio": [
+        {"hazard_type": "mechanical", "hazard_description": "Bordes y virutas de aluminio pueden ser cortantes.", "probability": 2, "severity": 2},
+        {"hazard_type": "chemical", "hazard_description": "Anodizados o recubrimientos pueden contener cromo. Verificar proceso.", "probability": 1, "severity": 2},
+    ],
+    "acero": [
+        {"hazard_type": "chemical", "hazard_description": "El acero inoxidable en joyería puede contener níquel. Verificar límites EN 1811 (≤0.2 µg/cm²/sem).", "probability": 2, "severity": 3},
+        {"hazard_type": "mechanical", "hazard_description": "Bordes o cierres metálicos pueden causar pequeños cortes.", "probability": 1, "severity": 2},
+    ],
+    "bisutería": [
+        {"hazard_type": "chemical", "hazard_description": "La bisutería de bajo coste frecuentemente supera los límites de níquel y plomo de REACH. Exigir test EN 1811.", "probability": 4, "severity": 3},
+        {"hazard_type": "physical", "hazard_description": "Piezas pequeñas (dijes, cierres) representan riesgo de asfixia para menores de 3 años.", "probability": 3, "severity": 5},
+    ],
+    "esmalte": [
+        {"hazard_type": "chemical", "hazard_description": "Los esmaltes pueden contener plomo o cadmio. Para uso alimentario: test de migración EN 1388.", "probability": 2, "severity": 4},
+    ],
+    "nácar": [
+        {"hazard_type": "physical", "hazard_description": "El nácar puede romperse en fragmentos afilados.", "probability": 2, "severity": 3},
+    ],
+    "perla": [
+        {"hazard_type": "physical", "hazard_description": "Las perlas de imitación pueden desprender la capa exterior. Riesgo de asfixia en niños.", "probability": 2, "severity": 3},
+    ],
+    "cristal": [
+        {"hazard_type": "physical", "hazard_description": "El cristal puede romperse generando fragmentos cortantes.", "probability": 2, "severity": 4},
+        {"hazard_type": "chemical", "hazard_description": "El cristal al plomo puede liberar plomo en contacto con alimentos.", "probability": 2, "severity": 4},
+    ],
+
+    # ===== RESINA / CERÁMICA / ARCILLA =====
     "resina": [
         {"hazard_type": "chemical", "hazard_description": "La resina epóxica sin curar es irritante/alérgena. Asegurar curado completo.", "probability": 3, "severity": 3},
         {"hazard_type": "physical", "hazard_description": "Las piezas de resina pueden romperse en fragmentos afilados.", "probability": 2, "severity": 3},
     ],
-
-    # ARCILLA / CERÁMICA
     "arcilla": [
         {"hazard_type": "mechanical", "hazard_description": "Bordes afilados en piezas rotas. Riesgo de astillas.", "probability": 2, "severity": 3},
         {"hazard_type": "chemical", "hazard_description": "Los esmaltes no alimentarios pueden contener plomo o cadmio.", "probability": 2, "severity": 4},
     ],
+    "porcelana": [
+        {"hazard_type": "mechanical", "hazard_description": "La porcelana puede romperse generando fragmentos muy afilados.", "probability": 2, "severity": 4},
+        {"hazard_type": "chemical", "hazard_description": "Los esmaltes decorativos pueden contener plomo o cadmio. Test de migración EN 1388 para uso alimentario.", "probability": 2, "severity": 4},
+    ],
+    "gres": [
+        {"hazard_type": "mechanical", "hazard_description": "El gres puede romperse generando bordes afilados.", "probability": 2, "severity": 3},
+        {"hazard_type": "chemical", "hazard_description": "Los esmaltes pueden contener plomo. Test de migración para uso alimentario.", "probability": 2, "severity": 4},
+    ],
+    "terracota": [
+        {"hazard_type": "chemical", "hazard_description": "La terracota sin esmaltar puede acumular bacterias. No apta para alimentos sin barniz alimentario.", "probability": 2, "severity": 3},
+        {"hazard_type": "mechanical", "hazard_description": "Riesgo de rotura y bordes afilados.", "probability": 2, "severity": 3},
+    ],
+    "yeso": [
+        {"hazard_type": "chemical", "hazard_description": "El yeso en polvo puede irritar vías respiratorias. Verificar pigmentos en piezas pintadas.", "probability": 2, "severity": 2},
+        {"hazard_type": "physical", "hazard_description": "Las piezas de yeso son frágiles y pueden romperse en fragmentos.", "probability": 3, "severity": 3},
+    ],
+    "escayola": [
+        {"hazard_type": "chemical", "hazard_description": "El polvo de escayola es irritante respiratorio. Las piezas acabadas son generalmente seguras.", "probability": 2, "severity": 2},
+        {"hazard_type": "physical", "hazard_description": "Puede romperse en fragmentos al caer.", "probability": 3, "severity": 3},
+    ],
 
-    # ACCESORIOS PEQUEÑOS
+    # ===== COSMÉTICA / HIGIENE =====
+    "jabón": [
+        {"hazard_type": "chemical", "hazard_description": "El jabón artesanal puede contener NaOH residual si no está correctamente curado. Verificar pH.", "probability": 2, "severity": 3},
+        {"hazard_type": "chemical", "hazard_description": "Los aceites esenciales o colorantes añadidos pueden ser alérgenos. Declarar en etiqueta.", "probability": 3, "severity": 2},
+    ],
+    "naoh": [
+        {"hazard_type": "chemical", "hazard_description": "El hidróxido de sodio es corrosivo. Solo es seguro si la saponificación está completa. Verificar pH.", "probability": 3, "severity": 4},
+    ],
+    "sosa": [
+        {"hazard_type": "chemical", "hazard_description": "La sosa cáustica es corrosiva. Solo es segura si la saponificación está completa.", "probability": 3, "severity": 4},
+    ],
+    "aceite vegetal": [
+        {"hazard_type": "chemical", "hazard_description": "Los aceites vegetales pueden volverse rancios. Indicar fecha de caducidad y conservación.", "probability": 1, "severity": 2},
+    ],
+    "manteca": [
+        {"hazard_type": "chemical", "hazard_description": "Mantecas naturales (karité, cacao) pueden ser alérgenas. Declarar en etiqueta INCI.", "probability": 2, "severity": 2},
+    ],
+    "karité": [
+        {"hazard_type": "chemical", "hazard_description": "La manteca de karité puede causar reacciones alérgicas. Declarar en etiqueta INCI.", "probability": 2, "severity": 2},
+    ],
+    "ácido cítrico": [
+        {"hazard_type": "chemical", "hazard_description": "El ácido cítrico puro es irritante ocular y cutáneo. En concentraciones de uso cosmético el riesgo es bajo.", "probability": 1, "severity": 2},
+    ],
+    "conservante": [
+        {"hazard_type": "chemical", "hazard_description": "Algunos conservantes (parabenos, MIT) pueden ser alérgenos o estar restringidos. Verificar lista positiva del Reglamento Cosmético.", "probability": 2, "severity": 3},
+    ],
+
+    # ===== ACCESORIOS PEQUEÑOS =====
     "botones": [
         {"hazard_type": "physical", "hazard_description": "Piezas pequeñas. Riesgo de asfixia para niños menores de 3 años.", "probability": 3, "severity": 5},
     ],
     "relleno": [
         {"hazard_type": "physical", "hazard_description": "El relleno suelto (polyester fiberfill) puede causar asfixia si el producto se rompe.", "probability": 2, "severity": 4},
     ],
+    "alambre": [
+        {"hazard_type": "mechanical", "hazard_description": "Los extremos del alambre son muy punzantes y cortantes. Asegurar que todos los extremos estén protegidos.", "probability": 4, "severity": 3},
+    ],
+    "glitter": [
+        {"hazard_type": "physical", "hazard_description": "La purpurina puede desprenderse e irritar ojos y mucosas. No apta para menores de 3 años.", "probability": 3, "severity": 3},
+        {"hazard_type": "chemical", "hazard_description": "El glitter metálico puede contener trazas de metales pesados.", "probability": 2, "severity": 3},
+    ],
+    "purpurina": [
+        {"hazard_type": "physical", "hazard_description": "La purpurina puede desprenderse e irritar ojos y mucosas. No apta para menores de 3 años.", "probability": 3, "severity": 3},
+    ],
 
-    # TINTES
+    # ===== TINTES =====
     "tinte": [
         {"hazard_type": "chemical", "hazard_description": "Los tintes pueden contener colorantes azo prohibidos por REACH Anexo XVII.", "probability": 2, "severity": 3},
+    ],
+
+    # ===== PLÁSTICOS =====
+    "plástico": [
+        {"hazard_type": "chemical", "hazard_description": "Algunos plásticos contienen ftalatos, BPA u otras sustancias SVHC. Verificar conformidad REACH.", "probability": 2, "severity": 3},
+    ],
+    "pvc": [
+        {"hazard_type": "chemical", "hazard_description": "El PVC puede contener ftalatos (DEHP, DBP…) restringidos por REACH. No apto para productos infantiles sin certificación.", "probability": 3, "severity": 4},
+    ],
+    "abs": [
+        {"hazard_type": "chemical", "hazard_description": "El ABS puede contener acrilonitrilo residual. Para contacto alimentario: no recomendado sin certificación.", "probability": 2, "severity": 3},
+        {"hazard_type": "thermal", "hazard_description": "El ABS puede emitir humos tóxicos al quemarse.", "probability": 2, "severity": 3},
+    ],
+
+    # ===== PAPEL / CARTÓN =====
+    "papel": [
+        {"hazard_type": "chemical", "hazard_description": "Tintas y pegamentos pueden contener VOCs. Para productos infantiles, verificar ausencia de sustancias SVHC.", "probability": 1, "severity": 2},
+    ],
+    "cartón": [
+        {"hazard_type": "chemical", "hazard_description": "Los cartones reciclados pueden contener hidrocarburos (MOAH/MOSH). Para contacto alimentario: usar barrera funcional.", "probability": 2, "severity": 3},
+    ],
+    "pegamento": [
+        {"hazard_type": "chemical", "hazard_description": "Los pegamentos pueden contener disolventes orgánicos (COVs) o isocianatos. Asegurar curado completo.", "probability": 2, "severity": 3},
+    ],
+
+    # ===== OTROS =====
+    "vidrio": [
+        {"hazard_type": "physical", "hazard_description": "El vidrio puede romperse generando fragmentos muy cortantes.", "probability": 2, "severity": 5},
+        {"hazard_type": "thermal", "hazard_description": "El vidrio expuesto a cambios bruscos de temperatura puede romperse (choque térmico).", "probability": 2, "severity": 4},
     ],
 }
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { ChevronRight, ChevronLeft, Plus, X, Loader2, AlertTriangle, CheckCircle, FileText, Tag, Download, Printer } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { analyzeRisk, downloadTechnicalFilePdf, downloadLabelPdf, createProduct, updateProduct, listResponsiblePersons, api } from '../api/gpsr'
+import { analyzeRisk, downloadTechnicalFilePdf, downloadLabelPdf, createProduct, updateProduct, listProducts, listResponsiblePersons, api } from '../api/gpsr'
 
 const STEPS = [
     { id: 1, label: 'Producto' },
@@ -129,6 +129,7 @@ export default function ProductWizard() {
 
     const [step, setStep] = useState(1)
     const [loading, setLoading] = useState(false)
+    const [riskError, setRiskError] = useState('')    // error message for risk analysis
     const [generating, setGenerating] = useState('')  // 'pdf' | 'label' | ''
     const [generated, setGenerated] = useState([])    // list of completed doc types
     const [saved, setSaved] = useState(false)         // product saved to store
@@ -152,6 +153,9 @@ export default function ProductWizard() {
     const [mitigations, setMitigations] = useState(
         Object.fromEntries((p.risks || []).map((r, i) => [i, r.mitigation || '']))
     )
+    // Add-risk form state
+    const [showAddRisk, setShowAddRisk] = useState(false)
+    const [newRisk, setNewRisk] = useState({ hazard_type: 'chemical', hazard_description: '', probability: 2, severity: 2 })
 
     // Step 4: Label & manufacturer
     const [batchCode, setBatchCode] = useState(
@@ -202,6 +206,7 @@ export default function ProductWizard() {
     const fetchRiskAnalysis = async () => {
         if (!category || materials.length === 0) return
         setLoading(true)
+        setRiskError('')
         try {
             const data = await analyzeRisk(category, materials)
             setRisks(data.risk_suggestions)
@@ -216,22 +221,12 @@ export default function ProductWizard() {
             if (data.suggested_warnings?.length > 0) {
                 setSuggestedWarnings(data.suggested_warnings)
             }
-        } catch {
-            setRisks([
-                {
-                    hazard_type: 'chemical', hazard_description: 'Posibles alérgenos en tintes o aprestos.', probability: 2, severity: 2, risk_score: 4, risk_level: 'low',
-                    mitigation_suggestion: 'Utilizar tintes con certificación OEKO-TEX Std 100 y solicitar declaración de conformidad REACH al proveedor.'
-                },
-                {
-                    hazard_type: 'thermal', hazard_description: 'Inflamabilidad en contacto con llamas.', probability: 2, severity: 3, risk_score: 6, risk_level: 'medium',
-                    mitigation_suggestion: 'Incluir instrucción de seguridad contra el fuego en la etiqueta y en las instrucciones de uso.'
-                },
-            ])
-            setMandatoryChecks(['Verificar tintes cumplen REACH', 'Incluir instrucciones de lavado'])
-            setMitigations({
-                0: 'Utilizar tintes con certificación OEKO-TEX Std 100 y solicitar declaración de conformidad REACH al proveedor.',
-                1: 'Incluir instrucción de seguridad contra el fuego en la etiqueta y en las instrucciones de uso.',
-            })
+        } catch (err) {
+            setRiskError(
+                'No se pudo conectar con el motor de riesgos. ' +
+                (err?.response?.data?.detail || err?.message || 'Verifica que el servidor esté activo.') +
+                ' Puedes añadir los riesgos manualmente a continuación.'
+            )
         }
         setLoading(false)
     }
@@ -283,6 +278,29 @@ export default function ProductWizard() {
         setRisks(updated)
     }
 
+    const deleteRisk = (i) => {
+        const updatedRisks = risks.filter((_, idx) => idx !== i)
+        // Rebuild mitigations with re-indexed keys
+        const updatedMitigations = {}
+        updatedRisks.forEach((_, idx) => {
+            const oldIdx = idx < i ? idx : idx + 1
+            updatedMitigations[idx] = mitigations[oldIdx] || ''
+        })
+        setRisks(updatedRisks)
+        setMitigations(updatedMitigations)
+    }
+
+    const addRiskManually = () => {
+        if (!newRisk.hazard_description.trim()) return
+        const score = newRisk.probability * newRisk.severity
+        const level = score <= 4 ? 'low' : score <= 12 ? 'medium' : 'high'
+        const entry = { ...newRisk, risk_score: score, risk_level: level }
+        setRisks(prev => [...prev, entry])
+        setMitigations(prev => ({ ...prev, [risks.length]: '' }))
+        setNewRisk({ hazard_type: 'chemical', hazard_description: '', probability: 2, severity: 2 })
+        setShowAddRisk(false)
+    }
+
     const next = async () => {
         if (step === 2) await fetchRiskAnalysis()
         if (step === 1) setBatchCode(`${new Date().getFullYear()}-${category.toUpperCase().slice(0, 3)}-001`)
@@ -295,18 +313,34 @@ export default function ProductWizard() {
         setLoading(true)
         try {
             const payload = buildPayload()
-            // Map bom from string array to objects if needed
             const apiPayload = {
                 ...payload,
                 bom: payload.bom.map(b => typeof b === 'string' ? { material_name: b } : b),
             }
 
             if (initialProduct && versionNumber === initialProduct.version_number) {
-                // If version is the same, we update the existing record
+                // Editing mode — update existing record
                 await updateProduct(initialProduct.id, apiPayload)
             } else {
-                // If it's a new product or we changed the version number, we create a new entry
-                await createProduct(apiPayload)
+                try {
+                    await createProduct(apiPayload)
+                } catch (createErr) {
+                    // If duplicate (400), try to find the existing record and update it
+                    if (createErr?.response?.status === 400) {
+                        const all = await listProducts()
+                        const existing = all.find(
+                            p => p.product_name === payload.product_name &&
+                                p.version_number === payload.version_number
+                        )
+                        if (existing) {
+                            await updateProduct(existing.id, apiPayload)
+                        } else {
+                            throw createErr
+                        }
+                    } else {
+                        throw createErr
+                    }
+                }
             }
 
             setSaved(true)
@@ -432,6 +466,27 @@ export default function ProductWizard() {
                         </div>
                     ) : (
                         <>
+                            {/* Error banner */}
+                            {riskError && (
+                                <div style={{
+                                    background: 'var(--amber-dim, #fff8e6)', border: '1.5px solid var(--amber)',
+                                    borderRadius: 'var(--radius-sm)', padding: '12px 16px',
+                                    marginBottom: 20, display: 'flex', gap: 10, alignItems: 'flex-start'
+                                }}>
+                                    <AlertTriangle size={16} style={{ color: 'var(--amber)', flexShrink: 0, marginTop: 2 }} />
+                                    <div style={{ flex: 1, fontSize: 13, color: 'var(--text)' }}>
+                                        {riskError}
+                                        <button
+                                            className="btn btn-secondary btn-sm"
+                                            style={{ marginTop: 8, display: 'block' }}
+                                            onClick={fetchRiskAnalysis}
+                                        >
+                                            🔄 Reintentar
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
                             {mandatoryChecks.length > 0 && (
                                 <div style={{ marginBottom: 24 }}>
                                     <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--amber)', marginBottom: 10 }}>⚡ Checks obligatorios para tu categoría:</div>
@@ -454,9 +509,25 @@ export default function ProductWizard() {
                                     <div key={i} className={`risk-item ${riskClass(r.risk_level)}`}>
                                         <div className="risk-item-header">
                                             <span className="risk-item-title" style={{ textTransform: 'capitalize' }}>{r.hazard_type.replace('_', ' ')}</span>
-                                            <span className="badge" style={{ background: riskColor(r.risk_level) + '22', color: riskColor(r.risk_level) }}>
-                                                {r.risk_level?.toUpperCase()} — Score: {r.risk_score}
-                                            </span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <span className="badge" style={{ background: riskColor(r.risk_level) + '22', color: riskColor(r.risk_level) }}>
+                                                    {r.risk_level?.toUpperCase()} — Score: {r.risk_score}
+                                                </span>
+                                                <button
+                                                    title="Eliminar riesgo"
+                                                    onClick={() => deleteRisk(i)}
+                                                    style={{
+                                                        background: 'none', border: 'none', cursor: 'pointer',
+                                                        color: 'var(--text-dim)', padding: '2px 4px', borderRadius: 4,
+                                                        display: 'flex', alignItems: 'center',
+                                                        transition: 'color 0.15s'
+                                                    }}
+                                                    onMouseEnter={e => e.currentTarget.style.color = 'var(--red)'}
+                                                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-dim)'}
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            </div>
                                         </div>
                                         <div className="risk-item-desc">{r.hazard_description}</div>
                                         <div className="risk-sliders">
@@ -490,9 +561,63 @@ export default function ProductWizard() {
                                         </div>
                                     </div>
                                 ))}
-                                <button className="btn btn-secondary" style={{ alignSelf: 'flex-start' }}>
-                                    <Plus size={14} /> Añadir riesgo manualmente
-                                </button>
+
+                                {/* Add risk form */}
+                                {showAddRisk ? (
+                                    <div style={{
+                                        border: '1.5px dashed var(--border)', borderRadius: 'var(--radius-sm)',
+                                        padding: 16, display: 'flex', flexDirection: 'column', gap: 10
+                                    }}>
+                                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>➕ Nuevo riesgo manual</div>
+                                        <div className="form-row">
+                                            <div className="form-group" style={{ flex: 1 }}>
+                                                <label className="form-label">Tipo de peligro</label>
+                                                <select className="form-select"
+                                                    value={newRisk.hazard_type}
+                                                    onChange={e => setNewRisk(r => ({ ...r, hazard_type: e.target.value }))}
+                                                >
+                                                    <option value="chemical">Chemical (Químico)</option>
+                                                    <option value="thermal">Thermal (Térmico)</option>
+                                                    <option value="physical">Physical (Físico)</option>
+                                                    <option value="mechanical">Mechanical (Mecánico)</option>
+                                                    <option value="other">Otro</option>
+                                                </select>
+                                            </div>
+                                            <div className="form-group" style={{ flex: 1 }}>
+                                                <label className="form-label">Probabilidad: {newRisk.probability}/5</label>
+                                                <input type="range" min={1} max={5} value={newRisk.probability}
+                                                    onChange={e => setNewRisk(r => ({ ...r, probability: Number(e.target.value) }))} />
+                                            </div>
+                                            <div className="form-group" style={{ flex: 1 }}>
+                                                <label className="form-label">Gravedad: {newRisk.severity}/5</label>
+                                                <input type="range" min={1} max={5} value={newRisk.severity}
+                                                    onChange={e => setNewRisk(r => ({ ...r, severity: Number(e.target.value) }))} />
+                                            </div>
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="form-label">Descripción del peligro *</label>
+                                            <textarea className="form-textarea" style={{ minHeight: 60, fontSize: 13 }}
+                                                value={newRisk.hazard_description}
+                                                onChange={e => setNewRisk(r => ({ ...r, hazard_description: e.target.value }))}
+                                                placeholder="Describe el peligro detectado..."
+                                            />
+                                        </div>
+                                        <div style={{ display: 'flex', gap: 8 }}>
+                                            <button className="btn btn-primary btn-sm" onClick={addRiskManually}
+                                                disabled={!newRisk.hazard_description.trim()}>
+                                                <Plus size={13} /> Añadir
+                                            </button>
+                                            <button className="btn btn-secondary btn-sm" onClick={() => setShowAddRisk(false)}>
+                                                Cancelar
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <button className="btn btn-secondary" style={{ alignSelf: 'flex-start' }}
+                                        onClick={() => setShowAddRisk(true)}>
+                                        <Plus size={14} /> Añadir riesgo manualmente
+                                    </button>
+                                )}
                             </div>
                         </>
                     )}
