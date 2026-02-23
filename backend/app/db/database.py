@@ -3,6 +3,7 @@ from urllib.parse import urlparse, urlencode, parse_qs, urlunparse
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 
 from app.core.config import settings
 from app.db.base import Base  # noqa: F401 – re-exported for convenience
@@ -40,6 +41,7 @@ engine = create_async_engine(
     echo=False,
     future=True,
     connect_args=_connect_args,
+    poolclass=NullPool,
 )
 
 AsyncSessionLocal = sessionmaker(
