@@ -58,9 +58,11 @@ MITIGATION_SUGGESTIONS: dict[str, str] = {
     "physical_choking":     "Añadir advertencia de edad mínima (≥3 años) en la etiqueta. Aseguramiento mecánico de todos los accesorios (prueba de tracción según EN 71-1 si aplica).",
     "physical_splinter":    "Lijado completo de todas las superficies y aristas (grano ≥180). Inspección visual y táctil por lote. No comercializar piezas con defectos.",
     "physical_broken":      "Añadir advertencia: 'Desechar si el producto presenta grietas o roturas'. Verificar resistencia mecánica por muestra de lote.",
+    "physical_magnet":      "Cumplir con EN 71-1 sobre imanes. Pruebas de flujo magnético. Advertencia obligatoria: 'Este juguete contiene imanes. La ingestión puede causar lesiones graves.'",
     # Mechanical
     "mechanical_splinter":  "Lijado completo de todas las superficies y cantos. Verificación visual y táctil por cada lote fabricado.",
     "mechanical_cut":       "Proteger bordes con acabado redondeado o protección. Incluir advertencia de manipulación con cuidado.",
+    "mechanical_magnet":    "Garantizar que el imán está recubierto e integrado mecánicamente al producto para evitar su desprendimiento.",
 }
 
 # Map from (hazard_type, keyword_in_description) → suggestion key
@@ -87,9 +89,14 @@ _MITIGATION_CLASSIFIER: list[tuple[str, str, str]] = [
     ("thermal",  "fund",      "thermal_melt"),
     ("physical", "asfixia",   "physical_choking"),
     ("physical", "pieza",     "physical_choking"),
+    ("physical", "imán",      "physical_magnet"),
+    ("physical", "iman",      "physical_magnet"),
     ("physical", "astilla",   "physical_splinter"),
     ("physical", "rompe",     "physical_broken"),
     ("physical", "fragm",     "physical_broken"),
+    ("mechanical","imán",     "mechanical_magnet"),
+    ("mechanical","iman",     "mechanical_magnet"),
+    ("mechanical","magnétic", "mechanical_magnet"),
     ("mechanical","astilla",  "mechanical_splinter"),
     ("mechanical","borde",    "mechanical_cut"),
     ("mechanical","arista",   "mechanical_cut"),
@@ -395,9 +402,21 @@ MATERIAL_RISK_MAP: dict[str, list[dict]] = {
         {"hazard_type": "chemical", "hazard_description": "Algunos conservantes (parabenos, MIT) pueden ser alérgenos o estar restringidos. Verificar lista positiva del Reglamento Cosmético.", "probability": 2, "severity": 3},
     ],
 
-    # ===== ACCESORIOS PEQUEÑOS =====
+    # ===== ACCESORIOS PEQUEÑOS Y MAGNÉTICOS =====
     "botones": [
         {"hazard_type": "physical", "hazard_description": "Piezas pequeñas. Riesgo de asfixia para niños menores de 3 años.", "probability": 3, "severity": 5},
+    ],
+    "imán": [
+        {"hazard_type": "physical", "hazard_description": "Los imanes pequeños pueden ser ingeridos. Peligro de asfixia y graves daños intestinales si se traga más de un imán.", "probability": 2, "severity": 5},
+        {"hazard_type": "mechanical", "hazard_description": "Riesgo de pellizcos o atrapamientos por fuerza magnética alta.", "probability": 3, "severity": 2},
+    ],
+    "imanes": [
+        {"hazard_type": "physical", "hazard_description": "Los imanes pequeños pueden ser ingeridos. Peligro de asfixia y graves daños intestinales si se traga más de un imán.", "probability": 2, "severity": 5},
+        {"hazard_type": "mechanical", "hazard_description": "Riesgo de pellizcos o atrapamientos por fuerza magnética alta.", "probability": 3, "severity": 2},
+    ],
+    "neodimio": [
+        {"hazard_type": "physical", "hazard_description": "Imán de alta potencia. Si se ingieren varios imanes pueden causar lesiones intestinales mortales. Mantener fuera del alcance de los niños.", "probability": 2, "severity": 5},
+        {"hazard_type": "mechanical", "hazard_description": "Los imanes de neodimio son muy fuertes y frágiles. Pueden romperse fácilmente o causar pellizcos severos.", "probability": 3, "severity": 3},
     ],
     "relleno": [
         {"hazard_type": "physical", "hazard_description": "El relleno suelto (polyester fiberfill) puede causar asfixia si el producto se rompe.", "probability": 2, "severity": 4},
